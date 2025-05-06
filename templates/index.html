@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}BookLovers - Home{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="py-5 text-center">
+    <h1 class="display-5 fw-bold">Welcome to BookLovers</h1>
+    <div class="col-lg-6 mx-auto">
+        <p class="lead mb-4">Discover your next favorite book with our personalized recommendation system.</p>
+        <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+            <a href="{{ url_for('books') }}" class="btn btn-primary btn-lg px-4 gap-3">
+                <i class="fas fa-book me-2"></i>Browse Books
+            </a>
+            {% if not current_user.is_authenticated %}
+                <a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-lg px-4">
+                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Personalized Recommendations Section -->
+{% if current_user.is_authenticated and recommended_books %}
+<section class="recommended-section">
+    <div class="container">
+        <h2 class="section-header">Recommended for You</h2>
+        <div class="row row-cols-2 row-cols-md-4 g-4">
+            {% for book in recommended_books %}
+            <div class="col">
+                <div class="card h-100 book-card">
+                    <img src="{{ book.image_url_m }}" class="card-img-top book-image" alt="{{ book.title }}" data-size="m" onerror="this.src='https://via.placeholder.com/100x140?text=No+Cover'">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ book.title }}</h5>
+                        <p class="card-text text-muted">{{ book.author }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge bg-primary">{{ "%.1f"|format(book.avg_rating) }} ★</span>
+                            <a href="{{ url_for('book_details', isbn=book.isbn) }}" class="btn btn-sm btn-outline-secondary">Details</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="text-center mt-4">
+            <a href="{{ url_for('books') }}" class="btn btn-outline-primary">View All Books</a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Popular Books Section -->
+<section class="mb-5">
+    <h2 class="section-header">Popular Books</h2>
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4">
+        {% for book in popular_books %}
+        <div class="col">
+            <div class="card h-100 book-card">
+                <img src="{{ book.image_url_m }}" class="card-img-top book-image" alt="{{ book.title }}" data-size="m" onerror="this.src='https://via.placeholder.com/100x140?text=No+Cover'">
+                <div class="card-body">
+                    <h5 class="card-title">{{ book.title }}</h5>
+                    <p class="card-text text-muted">{{ book.author }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-primary">{{ "%.1f"|format(book.avg_rating) }} ★</span>
+                        <a href="{{ url_for('book_details', isbn=book.isbn) }}" class="btn btn-sm btn-outline-secondary">Details</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Recent Books Section -->
+<section class="mb-5">
+    <h2 class="section-header">Recent Additions</h2>
+    <div class="row row-cols-2 row-cols-md-4 g-4">
+        {% for book in recent_books %}
+        <div class="col">
+            <div class="card h-100 book-card">
+                <img src="{{ book.image_url_m }}" class="card-img-top book-image" alt="{{ book.title }}" data-size="m" onerror="this.src='https://via.placeholder.com/100x140?text=No+Cover'">
+                <div class="card-body">
+                    <h5 class="card-title">{{ book.title }}</h5>
+                    <p class="card-text text-muted">{{ book.author }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-primary">{{ "%.1f"|format(book.avg_rating) }} ★</span>
+                        <a href="{{ url_for('book_details', isbn=book.isbn) }}" class="btn btn-sm btn-outline-secondary">Details</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="mb-5">
+    <h2 class="section-header">Features</h2>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-brain fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">Smart Recommendations</h5>
+                    <p class="card-text">Our recommendation system uses a Wide & Deep neural network to understand your reading preferences and suggest books you'll love.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">Community Ratings</h5>
+                    <p class="card-text">See what other readers think about books with our community rating system. Share your own ratings to help others discover great reads.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-search fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">Powerful Search</h5>
+                    <p class="card-text">Find books by title, author, publisher, or ISBN. Our advanced filtering options make it easy to discover exactly what you're looking for.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}BookLovers - {{ current_user.username }}'s Profile{% endblock %}
+
+{% block content %}
+<!-- Profile Header -->
+<div class="profile-header">
+    <h1 class="profile-heading">{{ current_user.username }}'s Profile</h1>
+    <div class="profile-info">
+        <span class="label">Email:</span>
+        <span>{{ current_user.email }}</span>
+    </div>
+    <div class="profile-info">
+        <span class="label">Location:</span>
+        <span>{{ current_user.location or 'Not specified' }}</span>
+    </div>
+    <div class="profile-info">
+        <span class="label">Age:</span>
+        <span>{{ current_user.age or 'Not specified' }}</span>
+    </div>
+    <div class="profile-info">
+        <span class="label">Member Since:</span>
+        <span>{{ current_user.registration_date.strftime('%B %d, %Y') }}</span>
+    </div>
+    <div class="profile-info">
+        <span class="label">Ratings:</span>
+        <span>{{ ratings|length }}</span>
+    </div>
+</div>
+
+<div class="row">
+    <!-- User's Library Section -->
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Your Book Ratings</h4>
+            </div>
+            <div class="card-body">
+                {% if ratings %}
+                    <ul class="rated-books-list">
+                        {% for rating in ratings %}
+                            {% if rating.isbn in rated_books %}
+                                {% set book = rated_books[rating.isbn] %}
+                                <li class="rated-book-item">
+                                    <div class="row">
+                                        <div class="col-md-2 col-sm-3 mb-3 mb-sm-0">
+                                            <img src="{{ book.image_url_s }}" class="img-fluid book-image" alt="{{ book.title }}" data-size="s" onerror="this.src='https://via.placeholder.com/60x80?text=No+Cover'">
+                                        </div>
+                                        <div class="col-md-10 col-sm-9">
+                                            <h5><a href="{{ url_for('book_details', isbn=book.isbn) }}">{{ book.title }}</a></h5>
+                                            <p class="text-muted mb-2">{{ book.author }}</p>
+                                            <div class="d-flex align-items-center">
+                                                <div class="rating-display me-2">
+                                                    {% for i in range(5) %}
+                                                        {% if i < (rating.rating / 2)|round(0, 'floor') %}
+                                                            <i class="fas fa-star"></i>
+                                                        {% elif (i < (rating.rating / 2)) and ((rating.rating / 2) - i >= 0.5) %}
+                                                            <i class="fas fa-star-half-alt"></i>
+                                                        {% else %}
+                                                            <i class="far fa-star"></i>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                                <span class="fw-bold">{{ rating.rating }}/10</span>
+                                                <span class="text-muted ms-2">(Rated on {{ rating.timestamp.strftime('%B %d, %Y') }})</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">You haven't rated any books yet. <a href="{{ url_for('books') }}">Browse books</a> to start rating!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recommendations Section -->
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Recommended for You</h4>
+            </div>
+            <div class="card-body">
+                {% if recommended_books %}
+                    <div class="row row-cols-1 row-cols-md-2 g-3">
+                        {% for book in recommended_books %}
+                        <div class="col">
+                            <div class="card h-100 book-card">
+                                <img src="{{ book.image_url_s }}" class="card-img-top book-image" alt="{{ book.title }}" data-size="s" onerror="this.src='https://via.placeholder.com/60x80?text=No+Cover'">
+                                <div class="card-body p-2">
+                                    <h6 class="card-title">{{ book.title }}</h6>
+                                    <p class="card-text small text-muted">{{ book.author }}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-primary">{{ "%.1f"|format(book.avg_rating) }} ★</span>
+                                        <a href="{{ url_for('book_details', isbn=book.isbn) }}" class="btn btn-sm btn-outline-secondary">Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">Rate more books to get personalized recommendations!</p>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="card-footer text-center">
+                <a href="{{ url_for('books') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-search me-2"></i>Browse More Books
+                </a>
+            </div>
+        </div>
+        
+        <!-- Reading Stats -->
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Your Reading Stats</h4>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h3 class="mb-0">{{ ratings|length }}</h3>
+                        <p class="text-muted">Books Rated</p>
+                    </div>
+                    <div class="col-6">
+                        {% if ratings %}
+                            {% set avg_rating = (ratings|sum(attribute='rating') / ratings|length) %}
+                            <h3 class="mb-0">{{ "%.1f"|format(avg_rating) }}</h3>
+                            <p class="text-muted">Avg Rating</p>
+                        {% else %}
+                            <h3 class="mb-0">0</h3>
+                            <p class="text-muted">Avg Rating</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

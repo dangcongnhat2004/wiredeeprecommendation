@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block title %}BookLovers - {{ book.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Book Image -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <img src="{{ book.image_url_l }}" class="card-img-top book-detail-image book-image" alt="{{ book.title }}" data-size="l" onerror="this.src='https://via.placeholder.com/200x280?text=No+Cover'">
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if current_user.is_authenticated %}
+                        {% if user_rating %}
+                            <a href="#rate-book" class="btn btn-primary">
+                                <i class="fas fa-star me-2"></i>Update Your Rating
+                            </a>
+                        {% else %}
+                            <a href="#rate-book" class="btn btn-primary">
+                                <i class="fas fa-star me-2"></i>Rate This Book
+                            </a>
+                        {% endif %}
+                        <button class="btn btn-outline-primary add-to-library" data-isbn="{{ book.isbn }}" onclick="addToLibrary('{{ book.isbn }}')">
+                            <i class="fas fa-bookmark me-2"></i>Add to Library
+                        </button>
+                    {% else %}
+                        <a href="{{ url_for('login', next=request.path) }}" class="btn btn-outline-primary">
+                            <i class="fas fa-sign-in-alt me-2"></i>Login to Rate & Save
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Book Details -->
+    <div class="col-md-8">
+        <h1 class="book-detail-title mb-3">{{ book.title }}</h1>
+        
+        <div class="mb-4">
+            <div class="d-flex align-items-center">
+                <div class="rating-display me-2">
+                    {% for i in range(5) %}
+                        {% if i < (book.avg_rating / 2)|round(0, 'floor') %}
+                            <i class="fas fa-star"></i>
+                        {% elif (i < (book.avg_rating / 2)) and ((book.avg_rating / 2) - i >= 0.5) %}
+                            <i class="fas fa-star-half-alt"></i>
+                        {% else %}
+                            <i class="far fa-star"></i>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <span class="fw-bold">{{ "%.1f"|format(book.avg_rating) }}/10</span>
+                <span class="text-muted ms-2">({{ book.num_ratings }} ratings)</span>
+            </div>
+        </div>
+        
+        <div class="book-info">
+            <span class="label">Author:</span>
+            <span>{{ book.author }}</span>
+        </div>
+        
+        <div class="book-info">
+            <span class="label">Publisher:</span>
+            <span>{{ book.publisher }}</span>
+        </div>
+        
+        <div class="book-info">
+            <span class="label">Year:</span>
+            <span>{{ book.year_of_publication }}</span>
+        </div>
+        
+        <div class="book-info">
+            <span class="label">ISBN:</span>
+            <span>{{ book.isbn }}</span>
+        </div>
+        
+        <hr class="my-4">
+        
+        <!-- Rate Book Section -->
+        {% if current_user.is_authenticated %}
+        <div id="rate-book" class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">{{ 'Update Your Rating' if user_rating else 'Rate This Book' }}</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('rate_book', isbn=book.isbn) }}" method="post">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Your Rating:</label>
+                        <div class="rating-control">
+                            {% for i in range(1, 11) %}
+                            <span class="star {% if user_rating and user_rating.rating >= i %}active{% endif %}" data-value="{{ i }}">★</span>
+                            {% endfor %}
+                            <span class="rating-value">{{ user_rating.rating if user_rating else '' }}</span>
+                            {{ form.rating(type="hidden", value=(user_rating.rating if user_rating else '')) }}
+                        </div>
+                        {% if form.rating.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.rating.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>{{ 'Update Rating' if user_rating else 'Submit Rating' }}
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- User Ratings Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Ratings</h5>
+            </div>
+            <div class="card-body user-ratings">
+                {% if ratings %}
+                    {% for rating in ratings %}
+                    <div class="rating-item">
+                        <div class="rating-username">{{ 'user_' + rating.user_id|string }}</div>
+                        <div class="rating-stars">
+                            <div class="rating-display small">
+                                {% for i in range(5) %}
+                                    {% if i < (rating.rating / 2)|round(0, 'floor') %}
+                                        <i class="fas fa-star"></i>
+                                    {% elif (i < (rating.rating / 2)) and ((rating.rating / 2) - i >= 0.5) %}
+                                        <i class="fas fa-star-half-alt"></i>
+                                    {% else %}
+                                        <i class="far fa-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                                <span class="ms-1 fw-bold">{{ rating.rating }}/10</span>
+                            </div>
+                        </div>
+                        <div class="rating-date text-muted">
+                            {{ rating.timestamp.strftime('%B %d, %Y') }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No ratings yet. Be the first to rate this book!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Similar Books Section -->
+{% if similar_books %}
+<section class="mt-5">
+    <h2 class="section-header">Similar Books You Might Like</h2>
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-6 g-4">
+        {% for book in similar_books %}
+        <div class="col">
+            <div class="card h-100 book-card">
+                <img src="{{ book.image_url_m }}" class="card-img-top book-image" alt="{{ book.title }}" data-size="m" onerror="this.src='https://via.placeholder.com/100x140?text=No+Cover'">
+                <div class="card-body">
+                    <h5 class="card-title small">{{ book.title }}</h5>
+                    <p class="card-text small text-muted">{{ book.author }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-primary small">{{ "%.1f"|format(book.avg_rating) }} ★</span>
+                        <a href="{{ url_for('book_details', isbn=book.isbn) }}" class="btn btn-sm btn-outline-secondary">Details</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Star rating script
+    const stars = document.querySelectorAll('.rating-control .star');
+    const ratingInput = document.querySelector('input[name="rating"]');
+    const ratingValue = document.querySelector('.rating-value');
+    
+    stars.forEach((star, index) => {
+        star.addEventListener('click', () => {
+            const value = index + 1;
+            ratingInput.value = value;
+            ratingValue.textContent = value;
+            
+            stars.forEach((s, i) => {
+                if (i < value) {
+                    s.classList.add('active');
+                } else {
+                    s.classList.remove('active');
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
