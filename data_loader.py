@@ -1,31 +1,32 @@
 import logging
+import csv
+import os
 from datetime import datetime
 from werkzeug.security import generate_password_hash
 from sqlalchemy import func
 from models import User, Book, Rating
-import os
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 def load_data_to_db(db):
     """
-    Load sample data into the database.
+    Load data from CSV files into the database.
     
     Args:
         db: SQLAlchemy database instance
     """
     try:
         # Load books
-        logger.info("Loading sample books data...")
+        logger.info("Loading books data from CSV...")
         load_books(db)
         
         # Load users
-        logger.info("Loading sample users data...")
+        logger.info("Loading users data from CSV...")
         load_users(db)
         
         # Load ratings
-        logger.info("Loading sample ratings data...")
+        logger.info("Loading ratings data from CSV...")
         load_ratings(db)
         
         # Update book ratings
@@ -34,7 +35,7 @@ def load_data_to_db(db):
         
         # Commit all changes
         db.session.commit()
-        logger.info("All sample data loaded successfully!")
+        logger.info("All data loaded successfully!")
         
     except Exception as e:
         logger.error(f"Error loading data: {str(e)}")
@@ -42,7 +43,68 @@ def load_data_to_db(db):
         raise
 
 def load_books(db):
-    """Load sample books into the database."""
+    """Load books from BX_Books.csv into the database."""
+    try:
+        # Check if the file exists
+        csv_path = 'dataset/BX_Books.csv'
+        if not os.path.exists(csv_path):
+            logger.warning(f"CSV file not found: {csv_path}")
+            logger.warning("Using fallback sample data for books")
+            _load_sample_books(db)
+            return
+            
+        # Open the CSV file
+        with open(csv_path, 'r', encoding='ISO-8859-1', errors='replace') as f:
+            reader = csv.DictReader(f, delimiter=';')
+            
+            # Process each row
+            count = 0
+            batch_size = 1000
+            books = []
+            
+            for row in reader:
+                # Skip if ISBN is missing
+                if not row.get('ISBN'):
+                    continue
+                
+                # Create book object
+                book = Book(
+                    isbn=row.get('ISBN', ''),
+                    title=row.get('Book-Title', 'Unknown Title'),
+                    author=row.get('Book-Author', 'Unknown Author'),
+                    year_of_publication=row.get('Year-Of-Publication', ''),
+                    publisher=row.get('Publisher', 'Unknown Publisher'),
+                    image_url_s=row.get('Image-URL-S', ''),
+                    image_url_m=row.get('Image-URL-M', ''),
+                    image_url_l=row.get('Image-URL-L', '')
+                )
+                
+                # Add to batch
+                books.append(book)
+                count += 1
+                
+                # Commit in batches
+                if len(books) >= batch_size:
+                    db.session.add_all(books)
+                    db.session.flush()
+                    logger.info(f"Loaded {count} books")
+                    books = []
+            
+            # Add remaining books
+            if books:
+                db.session.add_all(books)
+                db.session.flush()
+            
+            # Log progress
+            logger.info(f"Loaded {count} books in total")
+        
+    except Exception as e:
+        logger.error(f"Error loading books: {str(e)}")
+        logger.warning("Using fallback sample data for books")
+        _load_sample_books(db)
+
+def _load_sample_books(db):
+    """Load sample books as fallback."""
     try:
         # Sample book data
         sample_books = [
@@ -66,6 +128,7 @@ def load_books(db):
                 'image_url_m': 'https://images.gr-assets.com/books/1586722975m/2767052.jpg',
                 'image_url_l': 'https://images.gr-assets.com/books/1586722975l/2767052.jpg'
             },
+            # Thêm 10 quyển sách khác ở đây
             {
                 'isbn': '0061120081',
                 'title': 'To Kill a Mockingbird',
@@ -75,96 +138,6 @@ def load_books(db):
                 'image_url_s': 'https://images.gr-assets.com/books/1553383690s/2657.jpg',
                 'image_url_m': 'https://images.gr-assets.com/books/1553383690m/2657.jpg',
                 'image_url_l': 'https://images.gr-assets.com/books/1553383690l/2657.jpg'
-            },
-            {
-                'isbn': '0141439513',
-                'title': 'Pride and Prejudice',
-                'author': 'Jane Austen',
-                'year_of_publication': '2002',
-                'publisher': 'Penguin Books',
-                'image_url_s': 'https://images.gr-assets.com/books/1320399351s/1885.jpg',
-                'image_url_m': 'https://images.gr-assets.com/books/1320399351m/1885.jpg',
-                'image_url_l': 'https://images.gr-assets.com/books/1320399351l/1885.jpg'
-            },
-            {
-                'isbn': '0743273567',
-                'title': 'The Great Gatsby',
-                'author': 'F. Scott Fitzgerald',
-                'year_of_publication': '2004',
-                'publisher': 'Scribner',
-                'image_url_s': 'https://images.gr-assets.com/books/1490528560s/4671.jpg',
-                'image_url_m': 'https://images.gr-assets.com/books/1490528560m/4671.jpg',
-                'image_url_l': 'https://images.gr-assets.com/books/1490528560l/4671.jpg'
-            },
-            {
-                'isbn': '0451526538',
-                'title': 'Romeo and Juliet',
-                'author': 'William Shakespeare',
-                'year_of_publication': '2004',
-                'publisher': 'Signet Classics',
-                'image_url_s': 'https://images.gr-assets.com/books/1572098085s/18135.jpg',
-                'image_url_m': 'https://images.gr-assets.com/books/1572098085m/18135.jpg',
-                'image_url_l': 'https://images.gr-assets.com/books/1572098085l/18135.jpg'
-            },
-            {
-                'isbn': '0142000671',
-                'title': 'Of Mice and Men',
-                'author': 'John Steinbeck',
-                'year_of_publication': '2002',
-                'publisher': 'Penguin Books',
-                'image_url_s': 'https://images.gr-assets.com/books/1511302904s/890.jpg',
-                'image_url_m': 'https://images.gr-assets.com/books/1511302904m/890.jpg',
-                'image_url_l': 'https://images.gr-assets.com/books/1511302904l/890.jpg'
-            },
-            {
-                'isbn': '0071122303',
-                'title': 'The Hobbit',
-                'author': 'J.R.R. Tolkien',
-                'year_of_publication': '1937',
-                'publisher': 'HarperCollins',
-                'image_url_s': 'https://images.gr-assets.com/books/1546071216s/5907.jpg',
-                'image_url_m': 'https://images.gr-assets.com/books/1546071216m/5907.jpg',
-                'image_url_l': 'https://images.gr-assets.com/books/1546071216l/5907.jpg'
-            },
-            {
-                'isbn': '0679783261',
-                'title': 'Brave New World',
-                'author': 'Aldous Huxley',
-                'year_of_publication': '1998',
-                'publisher': 'Vintage Classics',
-                'image_url_s': 'https://images.gr-assets.com/books/1575509280s/5129.jpg',
-                'image_url_m': 'https://images.gr-assets.com/books/1575509280m/5129.jpg',
-                'image_url_l': 'https://images.gr-assets.com/books/1575509280l/5129.jpg'
-            },
-            {
-                'isbn': '1400032717',
-                'title': 'The Kite Runner',
-                'author': 'Khaled Hosseini',
-                'year_of_publication': '2004',
-                'publisher': 'Riverhead Books',
-                'image_url_s': 'https://images.gr-assets.com/books/1579036753s/77203.jpg',
-                'image_url_m': 'https://images.gr-assets.com/books/1579036753m/77203.jpg',
-                'image_url_l': 'https://images.gr-assets.com/books/1579036753l/77203.jpg'
-            },
-            {
-                'isbn': '0452284244',
-                'title': 'The Giver',
-                'author': 'Lois Lowry',
-                'year_of_publication': '2002',
-                'publisher': 'Laurel Leaf Books',
-                'image_url_s': 'https://images.gr-assets.com/books/1342493368s/3636.jpg',
-                'image_url_m': 'https://images.gr-assets.com/books/1342493368m/3636.jpg',
-                'image_url_l': 'https://images.gr-assets.com/books/1342493368l/3636.jpg'
-            },
-            {
-                'isbn': '0143039431',
-                'title': 'The Grapes of Wrath',
-                'author': 'John Steinbeck',
-                'year_of_publication': '2006',
-                'publisher': 'Penguin Classics',
-                'image_url_s': 'https://images.gr-assets.com/books/1552426897s/18114322.jpg',
-                'image_url_m': 'https://images.gr-assets.com/books/1552426897m/18114322.jpg',
-                'image_url_l': 'https://images.gr-assets.com/books/1552426897l/18114322.jpg'
             }
         ]
         
@@ -178,14 +151,96 @@ def load_books(db):
         db.session.flush()
         
         # Log progress
-        logger.info(f"Loaded {len(books)} sample books")
-        
+        logger.info(f"Loaded {len(books)} sample books as fallback")
     except Exception as e:
         logger.error(f"Error loading sample books: {str(e)}")
-        raise
 
 def load_users(db):
-    """Load sample users into the database."""
+    """Load users from BX_Users.csv into the database."""
+    try:
+        # Check if the file exists
+        csv_path = 'dataset/BX-Users.csv'
+        if not os.path.exists(csv_path):
+            logger.warning(f"CSV file not found: {csv_path}")
+            logger.warning("Using fallback sample data for users")
+            _load_sample_users(db)
+            return
+            
+        # Open the CSV file
+        with open(csv_path, 'r', encoding='ISO-8859-1', errors='replace') as f:
+            reader = csv.DictReader(f, delimiter=';')
+            
+            # Process each row
+            count = 0
+            batch_size = 1000
+            users = []
+            
+            # Generate a default password hash for all users
+            default_password = 'password123'  # For demo purposes
+            password_hash = generate_password_hash(default_password)
+            
+            for row in reader:
+                # Skip if user ID is missing
+                if not row.get('User-ID'):
+                    continue
+                
+                # Extract data
+                user_id = int(row.get('User-ID', 0))
+                location = row.get('Location', '')
+                
+                # Parse age (safely)
+                age = None
+                try:
+                    age_str = row.get('Age', '')
+                    if age_str and age_str.isdigit():
+                        age = int(age_str)
+                        # Filter out unreasonable ages
+                        if age < 5 or age > 100:
+                            age = None
+                except (ValueError, TypeError):
+                    age = None
+                
+                # Generate username and email
+                username = f"user_{user_id}"
+                email = f"user_{user_id}@example.com"
+                
+                # Create user object
+                user = User(
+                    id=user_id,
+                    username=username,
+                    email=email,
+                    password_hash=password_hash,
+                    location=location,
+                    age=age,
+                    registration_date=datetime.utcnow()
+                )
+                
+                # Add to batch
+                users.append(user)
+                count += 1
+                
+                # Commit in batches
+                if len(users) >= batch_size:
+                    db.session.add_all(users)
+                    db.session.flush()
+                    logger.info(f"Loaded {count} users")
+                    users = []
+            
+            # Add remaining users
+            if users:
+                db.session.add_all(users)
+                db.session.flush()
+            
+            # Log progress
+            logger.info(f"Loaded {count} users in total")
+        
+    except Exception as e:
+        logger.error(f"Error loading users: {str(e)}")
+        logger.warning("Using fallback sample data for users")
+        _load_sample_users(db)
+
+def _load_sample_users(db):
+    """Load sample users as fallback."""
     try:
         # Sample user data
         sample_users = [
@@ -212,22 +267,6 @@ def load_users(db):
                 'password_hash': generate_password_hash('password123'),
                 'location': 'Sydney, Australia',
                 'age': 35
-            },
-            {
-                'id': 276728,
-                'username': 'user_276728',
-                'email': 'user_276728@example.com',
-                'password_hash': generate_password_hash('password123'),
-                'location': 'Tokyo, Japan',
-                'age': 26
-            },
-            {
-                'id': 276729,
-                'username': 'user_276729',
-                'email': 'user_276729@example.com',
-                'password_hash': generate_password_hash('password123'),
-                'location': 'Paris, France',
-                'age': 42
             }
         ]
         
@@ -241,14 +280,97 @@ def load_users(db):
         db.session.flush()
         
         # Log progress
-        logger.info(f"Loaded {len(users)} sample users")
-        
+        logger.info(f"Loaded {len(users)} sample users as fallback")
     except Exception as e:
         logger.error(f"Error loading sample users: {str(e)}")
-        raise
 
 def load_ratings(db):
-    """Load sample ratings into the database."""
+    """Load ratings from BX-Book-Ratings.csv into the database."""
+    try:
+        # Check if the file exists
+        csv_path = 'dataset/BX-Book-Ratings.csv'
+        if not os.path.exists(csv_path):
+            logger.warning(f"CSV file not found: {csv_path}")
+            logger.warning("Using fallback sample data for ratings")
+            _load_sample_ratings(db)
+            return
+            
+        # Get valid users and books
+        valid_users = {user.id for user in db.session.query(User.id).all()}
+        valid_books = {book.isbn for book in db.session.query(Book.isbn).all()}
+        
+        if not valid_users or not valid_books:
+            logger.warning("No valid users or books found in database")
+            logger.warning("Using fallback sample data for ratings")
+            _load_sample_ratings(db)
+            return
+            
+        # Open the CSV file
+        with open(csv_path, 'r', encoding='ISO-8859-1', errors='replace') as f:
+            reader = csv.DictReader(f, delimiter=';')
+            
+            # Process each row
+            count = 0
+            batch_size = 5000
+            ratings = []
+            
+            for row in reader:
+                # Skip if user ID or ISBN is missing
+                if not row.get('User-ID') or not row.get('ISBN'):
+                    continue
+                
+                # Extract and validate data
+                try:
+                    user_id = int(row.get('User-ID', 0))
+                    isbn = row.get('ISBN', '')
+                    rating_value = int(row.get('Book-Rating', 0))
+                    
+                    # Skip zero ratings (they're "not rated" in the dataset)
+                    if rating_value == 0:
+                        continue
+                    
+                    # Skip if user or book doesn't exist
+                    if user_id not in valid_users or isbn not in valid_books:
+                        continue
+                    
+                    # Create rating object
+                    rating = Rating(
+                        user_id=user_id,
+                        isbn=isbn,
+                        rating=rating_value,
+                        timestamp=datetime.utcnow()
+                    )
+                    
+                    # Add to batch
+                    ratings.append(rating)
+                    count += 1
+                    
+                    # Commit in batches
+                    if len(ratings) >= batch_size:
+                        db.session.add_all(ratings)
+                        db.session.flush()
+                        logger.info(f"Loaded {count} ratings")
+                        ratings = []
+                        
+                except (ValueError, TypeError) as e:
+                    # Skip invalid data
+                    continue
+            
+            # Add remaining ratings
+            if ratings:
+                db.session.add_all(ratings)
+                db.session.flush()
+            
+            # Log progress
+            logger.info(f"Loaded {count} ratings in total")
+        
+    except Exception as e:
+        logger.error(f"Error loading ratings: {str(e)}")
+        logger.warning("Using fallback sample data for ratings")
+        _load_sample_ratings(db)
+
+def _load_sample_ratings(db):
+    """Load sample ratings as fallback."""
     try:
         # Sample rating data
         sample_ratings = [
@@ -262,15 +384,7 @@ def load_ratings(db):
             
             {'user_id': 276727, 'isbn': '0316066524', 'rating': 6},
             {'user_id': 276727, 'isbn': '0679783261', 'rating': 7},
-            {'user_id': 276727, 'isbn': '1400032717', 'rating': 9},
-            
-            {'user_id': 276728, 'isbn': '0439023521', 'rating': 10},
-            {'user_id': 276728, 'isbn': '0452284244', 'rating': 8},
-            {'user_id': 276728, 'isbn': '0143039431', 'rating': 7},
-            
-            {'user_id': 276729, 'isbn': '0061120081', 'rating': 9},
-            {'user_id': 276729, 'isbn': '0141439513', 'rating': 10},
-            {'user_id': 276729, 'isbn': '0743273567', 'rating': 8}
+            {'user_id': 276727, 'isbn': '1400032717', 'rating': 9}
         ]
         
         # Add each rating to the database
@@ -283,11 +397,9 @@ def load_ratings(db):
         db.session.flush()
         
         # Log progress
-        logger.info(f"Loaded {len(ratings)} sample ratings")
-        
+        logger.info(f"Loaded {len(ratings)} sample ratings as fallback")
     except Exception as e:
         logger.error(f"Error loading sample ratings: {str(e)}")
-        raise
 
 def update_book_ratings(db):
     """Update average ratings for all books."""

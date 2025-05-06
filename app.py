@@ -18,13 +18,15 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "booklovers-secret-key")
 
-# Configure database to use PostgreSQL
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+# Configure database to use SQLite
+# Make sure the instance directory exists
+app_dir = os.path.abspath(os.path.dirname(__file__))
+instance_dir = os.path.join(app_dir, 'instance')
+os.makedirs(instance_dir, exist_ok=True)
+database_path = os.path.join(instance_dir, 'booksite.db')
+
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{database_path}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
-}
 
 # Initialize SQLAlchemy
 class Base(DeclarativeBase):
