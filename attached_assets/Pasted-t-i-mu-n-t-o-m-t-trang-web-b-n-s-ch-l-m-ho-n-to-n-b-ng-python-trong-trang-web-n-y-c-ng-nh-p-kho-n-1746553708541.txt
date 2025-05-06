@@ -1,0 +1,80 @@
+tôi muốn tạo một trang web bán sách làm hoàn toàn bằng python,trong trang web này có đăng nhập khoản (dựa trên data user có sẵn của dataset) người chưa có tài khoản thì có thể tạo mới,dựa vào dữ liệu các file pkl và keras của tôi train được từ model (đây là mô hình recommendation) áp dụng vào trang web này ,khi người dùng click vào sản phẩm nào đó thì nó sẽ gợi ý dựa trên rating ,Mô hình này là một kiến trúc "Wide & Deep" và nó dự đoán dựa trên sự kết hợp của các yếu tố sau:
+
+    Phần "Wide" (Rộng): Ghi nhớ (Memorization)
+
+        Mục đích: Học các quy tắc tương tác đặc trưng, đơn giản và trực tiếp giữa các đặc trưng. Nó giỏi trong việc "ghi nhớ" các cặp đặc trưng thường xuyên xuất hiện cùng nhau.
+
+        Đặc trưng sử dụng (đã được mã hóa số):
+
+            user_id_encoded: ID người dùng.
+
+            isbn_encoded: ID sách (ISBN).
+
+            author_encoded: ID tác giả.
+
+            publisher_encoded: ID nhà xuất bản.
+
+            year_encoded: Năm xuất bản (đã mã hóa).
+
+            age_binned_encoded: Nhóm tuổi của người dùng (đã mã hóa).
+
+        Cách sử dụng: Các đặc trưng này được đưa trực tiếp (sau khi ép kiểu sang float) vào một lớp Dense duy nhất không có hàm kích hoạt (hoặc hàm kích hoạt tuyến tính). Điều này cho phép mô hình học các mối quan hệ tuyến tính đơn giản, ví dụ: "người dùng A thường thích sách của nhà xuất bản B".
+
+    Phần "Deep" (Sâu): Khái quát hóa (Generalization)
+
+        Mục đích: Khám phá các mẫu tương tác phức tạp, ẩn giấu và có tính khái quát cao hơn giữa các đặc trưng thông qua các embedding và các lớp mạng nơ-ron dày đặc.
+
+        Đặc trưng sử dụng:
+
+            Categorical Features (đã mã hóa số, sau đó chuyển thành embedding):
+
+                user_id_encoded: Chuyển thành vector embedding người dùng.
+
+                isbn_encoded: Chuyển thành vector embedding sách.
+
+                author_encoded: Chuyển thành vector embedding tác giả.
+
+                publisher_encoded: Chuyển thành vector embedding nhà xuất bản.
+
+                year_encoded: Chuyển thành vector embedding năm.
+
+                age_binned_encoded: Chuyển thành vector embedding nhóm tuổi.
+
+                Ý nghĩa của Embedding: Biến đổi các ID rời rạc thành các vector dày đặc trong không gian nhiều chiều, nơi các thực thể tương tự (ví dụ: người dùng có sở thích giống nhau, sách có chủ đề giống nhau) sẽ có vector embedding gần nhau.
+
+            Numerical Features (đã chuẩn hóa):
+
+                avg_rating_scaled: Điểm đánh giá trung bình của sách.
+
+                num_ratings_scaled: Số lượt đánh giá của sách (độ phổ biến).
+
+                Cách sử dụng: Đưa trực tiếp vào các lớp Dense.
+
+            Textual Features (đã chuyển thành embedding):
+
+                title_embedding_features: Vector embedding của tiêu đề sách (tạo từ Word2Vec).
+
+                Cách sử dụng: Đưa trực tiếp vào các lớp Dense.
+
+        Cách sử dụng: Các vector embedding (sau khi được làm phẳng - Flatten), các đặc trưng số và embedding tiêu đề được nối lại (Concatenate) và sau đó đi qua nhiều lớp Dense với hàm kích hoạt ReLU và các lớp Dropout để học các mối quan hệ phi tuyến phức tạp.
+
+    Kết hợp Wide & Deep:
+
+        Đầu ra của phần Wide (một giá trị logit) và đầu ra của phần Deep (một giá trị logit) được nối lại.
+
+        Kết quả nối này được đưa qua một lớp Dense cuối cùng với hàm kích hoạt sigmoid.
+
+    Dự đoán cuối cùng:
+
+        Hàm sigmoid ở lớp cuối cùng sẽ cho ra một xác suất (từ 0 đến 1).
+
+        Xác suất này biểu thị khả năng người dùng (user_id) sẽ có tương tác tích cực (trong trường hợp này là rating > 0, được gán nhãn là 1) với một cuốn sách (isbn) cụ thể, dựa trên tất cả các đặc trưng đầu vào đã nêu.
+
+Tóm lại:
+Mô hình dự đoán khả năng một người dùng sẽ thích (tương tác tích cực với) một cuốn sách bằng cách:
+
+    Ghi nhớ các quy tắc đơn giản từ các đặc trưng thô (phần Wide).
+
+    Khái quát hóa các mẫu phức tạp hơn từ các biểu diễn dày đặc (embedding) của người dùng, sách, tác giả, NXB, năm, tuổi, cũng như từ các đặc trưng số (rating, số lượng rating) và đặc trưng văn bản (tiêu đề sách) (phần Deep).
+
+    Kết hợp cả hai loại thông tin này để đưa ra dự đoán cuối cùng."
