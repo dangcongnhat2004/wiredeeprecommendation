@@ -14,9 +14,14 @@ how to run this app?
 step 1:
       stage:config:
       download dataset includes 3 file move all to instance foleder on this project
+
+      
 step 2: 
       stage:run:
       on your terminal of project : flask run 
+
+
+      
 Book Recommendation System - System Overview
 
 This document provides an overview of the Book Recommendation System, a web application designed to help users discover books and receive personalized recommendations.
