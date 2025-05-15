@@ -3,7 +3,7 @@ link dataset:https://www.kaggle.com/datasets/ruchi798/bookcrossing-dataset?fbcli
 
 
 
-
+link github:  https://github.com/dangcongnhat2004/wiredeeprecommendation
 
 
 
